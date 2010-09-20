@@ -8,9 +8,17 @@ int height = 800;
 double offset = 0;
 double desiredOffset = 0;
 
+Object cursorLock;
+
+TuioCursor firstCursor;
+TuioCursor secondCursor;
+
 Set<TuioCursor> cursors = new HashSet<TuioCursor>();
-boolean isScrolling;
 double scrollBasisCursorX;
+
+boolean isZooming;
+boolean isZoomedIn;
+boolean isPanning;
 
 void setup() {
   size(width, height, OPENGL);
@@ -85,17 +93,48 @@ void updateScrollBasis() {
   }
 }
 
+void updateState() {
+  if (isPanning) {
+    if (firstCursor == null && secondCursor == null) {
+      isPanning = false;
+    }
+  } else if (isZooming) {
+    if (secondCursor == null) {
+      isZooming = false;
+      isPanning = true;
+    }
+  } else {
+    if (firstCursor != null && secondCursor != null) {
+      isZooming = true;
+    }
+  }
+}
+
 void addTuioCursor(TuioCursor tcur) {
-  synchronized(cursors) {
-    cursors.add(tcur);
-    updateScrollBasis();
+  synchronized(cursorLock) {
+    if (!firstCursor) tcur = firstCursor;
+    else if (!secondCursor) tcur = secondCursor;
+
+    updateState();
   }
 }
 
 void removeTuioCursor(TuioCursor tcur) {
-  synchronized(cursors) {
-    cursors.remove(tcur);
-    updateScrollBasis();
+  synchronized(cursorLock) {
+    if (firstCursor == tcur) {
+      firstCursor = secondCursor;
+      secondCursor = null;
+    } else if (secondCursor == tcur) secondCursor = null;
+
+    updateState();
+  }
+}
+
+void updateTuioCursor(TuioCursor tcur) {
+  if (firstCursor == tcur && secondCursor == null && !isZooming && !isPanning) {
+    if (tcur.getPosition().getDistance(tcur.getPath().get(0)) > 0.01) {
+      isPanning = true;
+    }
   }
 }
 
@@ -106,4 +145,3 @@ void refresh(TuioTime bundleTime) {
 void addTuioObject(TuioObject tobj) {}
 void removeTuioObject(TuioObject tobj) {}
 void updateTuioObject(TuioObject tobj) {}
-void updateTuioCursor(TuioCursor tcur) {}
