@@ -147,12 +147,14 @@ void removeTuioCursor(TuioCursor tcur) {
         float xspeed = tcur.getXSpeed();
         println("X Speed: " + xspeed);
         if (xspeed > 20) {
-          println("Snapping left");
-          snapToLeft();
+          println("Snapping right: " + offset);
+          double origOffset = offset + width * (-tcur.getPath().get(0).getX() + tcur.getX());
+          snapToRight(origOffset);
           // Going fast
         } else if (xspeed < -20) {
-          println("Snapping right");
-          snapToRight();
+          println("Snapping left: " + offset);
+          double origOffset = offset + width * (-tcur.getPath().get(0).getX() + tcur.getX());
+          snapToLeft(origOffset);
         } else {
           println("Snapping offset");
           snapOffsetToClosest();

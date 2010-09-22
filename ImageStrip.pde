@@ -72,21 +72,26 @@ void drawStrip() {
   }
 }
 
-void snapToLeft() {
-  snapToIndex(offset - (width + gap)); 
+void snapToLeft(double origOffset) {
+  int index = (int) Math.round(origOffset / (width + gap));
+  if (index > 0) {
+    index -= 1;
+  }
+  desiredOffset = offsetOfIndex(index);
+  println("Index: " + index + "\tOffset" + origOffset + "\tDOffset" + desiredOffset);
 }
 
-
-void snapToRight() {
-  snapToIndex(offset + width + gap);
+void snapToRight(double origOffset) {
+  int index = (int) Math.round(origOffset / (width + gap));
+  if (index < images.size() - 1) {
+    index += 1;
+  }
+  desiredOffset = offsetOfIndex(index);
+  println("Index: " + index + "\tOffset" + origOffset + "\tDOffset" + desiredOffset);
 }
 
 void snapOffsetToClosest() {
-  snapToIndex(offset);
-}
-
-void snapToIndex(double curOffset) {
-  int index = (int) curOffset / (width + gap);
+  int index = (int) offset / (width + gap);
   // The extremes
   if (index < 0) {
     desiredOffset = 0;
@@ -100,6 +105,6 @@ void snapToIndex(double curOffset) {
   double rightOffset = offsetOfIndex(index + 1);
   double mid = (leftOffset + rightOffset) / 2;
   
-  if (curOffset < mid) desiredOffset = leftOffset;
+  if (offset < mid) desiredOffset = leftOffset;
   else desiredOffset = rightOffset;
 }
