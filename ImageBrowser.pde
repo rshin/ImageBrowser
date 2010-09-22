@@ -13,8 +13,8 @@ Object cursorLock;
 TuioCursor firstCursor;
 TuioCursor secondCursor;
 
-double scrollBasisCursorX;
-double scrollBasisCursorY;
+double scrollBasisFirstCursorX;
+double scrollBasisFirstCursorY;
 
 boolean isZooming;
 boolean isZoomedIn;
@@ -53,23 +53,26 @@ void setup() {
   isPanning = false;
 }
 
+float time = 0;
+
 void draw() {
-  println("Zooming: " + isZooming + "\tZoomedIn: " + isZoomedIn + "\tPanning: " + isPanning); 
+  if (millis() - time  > 1000) {
+    println("Zooming: " + isZooming + "\tZoomedIn: " + isZoomedIn + "\tPanning: " + isPanning);
+    time = millis();
+  }
   // Clear screen
   background(0);
   
   // Re-calculate offset
   synchronized(cursorLock) {
-    if (isPanning) {
+    if (isPanning && !isZoomedIn && !isZooming) {
       if (!isZoomedIn) {
-        double dx = (firstCursor.getX() - scrollBasisCursorX) * width;
+        double dx = (firstCursor.getX() - scrollBasisFirstCursorX) * width;
         offset -= dx;
-        scrollBasisCursorX = firstCursor.getX();
-        // println("cx: " + c.getX() + " bx: " + scrollBasisCursor.getX() +  "dx: " + dx);
+        scrollBasisFirstCursorX = firstCursor.getX();
+        scrollBasisFirstCursorY = firstCursor.getY();
       }
-    }
-
-    if (!isPanning && !isZoomedIn && !isZooming) {
+    } else if (!isPanning && !isZoomedIn && !isZooming) {
       // Animate the snapback
       if (desiredOffset != offset) {
         offset += (desiredOffset - offset) / 10;
@@ -100,12 +103,13 @@ void addTuioCursor(TuioCursor tcur) {
       } else if (!isZooming && isZoomedIn && !isPanning) {
         isPanning = true;
       }
-      firstCursor = tcur;  
+      firstCursor = tcur; 
+      scrollBasisFirstCursorX = tcur.getX();
+      scrollBasisFirstCursorY = tcur.getY();
     } else if (secondCursor == null) {
       if ((!isZooming && !isZoomedIn && !isPanning) ||
           (!isZooming && isZoomedIn && isPanning)) {
         isZooming = true;
-        println("Place 1");
         isPanning = false;
       }
       secondCursor = tcur;
@@ -137,13 +141,23 @@ void removeTuioCursor(TuioCursor tcur) {
     } else if (firstCursor != null && firstCursor == tcur) {
       if (!isZooming && !isZoomedIn && !isPanning) {
         //initial state
-      } else if (!isZooming && !isZoomedIn && isPanning) {
-        println("Place 2");
+      } else if ((!isZooming && !isZoomedIn && isPanning) ||
+                 (!isZooming && !isZoomedIn && !isPanning)) {
         isPanning = false;
-        // check acceleration
-        
+        float xspeed = tcur.getXSpeed();
+        println("X Speed: " + xspeed);
+        if (xspeed > 20) {
+          println("Snapping left");
+          snapToLeft();
+          // Going fast
+        } else if (xspeed < -20) {
+          println("Snapping right");
+          snapToRight();
+        } else {
+          println("Snapping offset");
+          snapOffsetToClosest();
+        }
       } else if (!isZooming && isZoomedIn && isPanning) {
-        println("Place 3");
         isPanning = false;
       }
       firstCursor = null;

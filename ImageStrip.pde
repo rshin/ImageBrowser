@@ -72,9 +72,21 @@ void drawStrip() {
   }
 }
 
+void snapToLeft() {
+  snapToIndex(offset - (width + gap)); 
+}
+
+
+void snapToRight() {
+  snapToIndex(offset + width + gap);
+}
+
 void snapOffsetToClosest() {
-  int index = (int) offset / (width + gap);
-  
+  snapToIndex(offset);
+}
+
+void snapToIndex(double curOffset) {
+  int index = (int) curOffset / (width + gap);
   // The extremes
   if (index < 0) {
     desiredOffset = 0;
@@ -88,7 +100,6 @@ void snapOffsetToClosest() {
   double rightOffset = offsetOfIndex(index + 1);
   double mid = (leftOffset + rightOffset) / 2;
   
-  if (offset < mid) desiredOffset = leftOffset;
+  if (curOffset < mid) desiredOffset = leftOffset;
   else desiredOffset = rightOffset;
 }
-
