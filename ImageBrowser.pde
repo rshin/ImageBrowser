@@ -80,8 +80,9 @@ void draw() {
       double cursorsDistance = firstCursor.getDistance(secondCursor);
       double zoomFactor = cursorsDistance / zoomCursorsDistance;
       int imageIndex = (int) offset / (width + gap);
-      images.get(imageIndex).zoomFactor = zoomFactor;
+      images.get(imageIndex).zoomFactor *= zoomFactor;
       isZoomedIn = abs((float) zoomFactor - 1.0) > 0.05;
+      zoomCursorsDistance = cursorsDistance;
     } else if (!isPanning && !isZoomedIn && !isZooming) {
       // Animate the snapback
       if (desiredOffset != offset) {

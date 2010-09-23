@@ -12,7 +12,6 @@ class Image {
   double scaledWidth;
   double scaledHeight;
   
-
   double zoomFactor;
   double imgOffsetLeft;
   double imgOffsetTop;
@@ -47,10 +46,10 @@ class Image {
   }
 
   void draw(int x, int leftLimit, int rightLimit) {
-    float imgX = (float) (x + offsetLeft - imgOffsetLeft - leftLimit - width * (zoomFactor - 1.0) / 2);
-    float imgY = (float) (offsetTop - imgOffsetTop - height * (zoomFactor - 1.0) / 2);
-    float imgWidth = (float) (scaledWidth + width * (zoomFactor - 1.0));
-    float imgHeight = (float) (scaledHeight + height * (zoomFactor - 1.0));
+    float imgX = (float) (x + offsetLeft - imgOffsetLeft - leftLimit - scaledWidth * (zoomFactor - 1.0) / 2);
+    float imgY = (float) (offsetTop - imgOffsetTop - scaledHeight * (zoomFactor - 1.0) / 2);
+    float imgWidth = (float) (scaledWidth + scaledWidth * (zoomFactor - 1.0));
+    float imgHeight = (float) (scaledHeight + scaledHeight * (zoomFactor - 1.0));
     image(pimg, imgX, imgY, imgWidth, imgHeight);
   }
 }
