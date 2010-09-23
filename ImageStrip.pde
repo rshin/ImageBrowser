@@ -12,6 +12,11 @@ class Image {
   double scaledWidth;
   double scaledHeight;
   
+
+  double zoomFactor;
+  double imgOffsetLeft;
+  double imgOffsetTop;
+
   Image(String filename) {
     this.filename = filename;    
     pimg = loadImage(filename);
@@ -36,10 +41,17 @@ class Image {
     
     // Force-draw the image to load it into VRAM (?)
     image(pimg, 0, 0, 0.1, 0.1);
+
+    zoomFactor = 1.0;
+    imgOffsetLeft = imgOffsetTop = 0.0;
   }
 
   void draw(int x, int leftLimit, int rightLimit) {
-    image(pimg, (float) (x + offsetLeft - leftLimit), (float) offsetTop, (float) scaledWidth, (float) scaledHeight);
+    float imgX = (float) (x + offsetLeft - imgOffsetLeft - leftLimit - width * (zoomFactor - 1.0) / 2);
+    float imgY = (float) (offsetTop - imgOffsetTop - height * (zoomFactor - 1.0) / 2);
+    float imgWidth = (float) (scaledWidth + width * (zoomFactor - 1.0));
+    float imgHeight = (float) (scaledHeight + height * (zoomFactor - 1.0));
+    image(pimg, imgX, imgY, imgWidth, imgHeight);
   }
 }
 

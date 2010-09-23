@@ -20,6 +20,10 @@ boolean isZooming;
 boolean isZoomedIn;
 boolean isPanning;
 
+double zoomCursorsDistance;
+double zoomCursorsCenterX;
+double zoomCursorsCenterY;
+
 void setup() {
   size(width, height, OPENGL);
   hint(ENABLE_OPENGL_4X_SMOOTH);
@@ -72,6 +76,12 @@ void draw() {
         scrollBasisFirstCursorX = firstCursor.getX();
         scrollBasisFirstCursorY = firstCursor.getY();
       }
+    } else if (!isPanning && isZooming) {
+      double cursorsDistance = firstCursor.getDistance(secondCursor);
+      double zoomFactor = cursorsDistance / zoomCursorsDistance;
+      int imageIndex = (int) offset / (width + gap);
+      images.get(imageIndex).zoomFactor = zoomFactor;
+      isZoomedIn = abs((float) zoomFactor - 1.0) > 0.05;
     } else if (!isPanning && !isZoomedIn && !isZooming) {
       // Animate the snapback
       if (desiredOffset != offset) {
@@ -107,12 +117,15 @@ void addTuioCursor(TuioCursor tcur) {
       scrollBasisFirstCursorX = tcur.getX();
       scrollBasisFirstCursorY = tcur.getY();
     } else if (secondCursor == null) {
+      secondCursor = tcur;
       if ((!isZooming && !isZoomedIn && !isPanning) ||
           (!isZooming && isZoomedIn && isPanning)) {
-        isZooming = true;
         isPanning = false;
+        isZooming = true;
+        zoomCursorsDistance = firstCursor.getDistance(secondCursor);
+        zoomCursorsCenterX = (firstCursor.getX() + secondCursor.getX()) / 2;
+        zoomCursorsCenterY = (firstCursor.getY() + secondCursor.getY()) / 2;
       }
-      secondCursor = tcur;
     }
   }
 }
