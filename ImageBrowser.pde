@@ -3,12 +3,12 @@ import javax.media.opengl.*;
 import TUIO.*;
 
 TuioProcessing tuioClient;
-int width = 1280;
-int height = 800;
+int width = 800;
+int height = 600;
 double offset = 0;
 double desiredOffset = 0;
 
-Object cursorLock;
+Object cursorLock = new Object();
 
 TuioCursor firstCursor;
 TuioCursor secondCursor;
@@ -20,9 +20,10 @@ boolean isZooming;
 boolean isZoomedIn;
 boolean isPanning;
 
-double zoomCursorsDistance;
-double zoomCursorsCenterX;
-double zoomCursorsCenterY;
+TuioPoint firstCursorLastPos;
+TuioPoint secondCursorLastPos;
+
+Image mainVisibleImage;
 
 void setup() {
   size(width, height, OPENGL);
@@ -32,7 +33,6 @@ void setup() {
   frameRate(120);  
   
   tuioClient = new TuioProcessing(this);
-  cursorLock = tuioClient;
   
   String imageNames[] = new File(dataPath("")).list(new FilenameFilter() {
     public boolean accept(File dir, String name) {
@@ -42,6 +42,7 @@ void setup() {
   for (String fn : imageNames) {
     images.add(new Image(fn));
   }
+  mainVisibleImage = images.get(0);
   
   stripWidth = images.size() * width + (images.size() - 1) * gap;
   //println("strip width: " + stripWidth);
@@ -69,23 +70,25 @@ void draw() {
   
   // Re-calculate offset
   synchronized(cursorLock) {
-    if (isPanning && !isZoomedIn && !isZooming) {
+    if (isPanning && !isZooming) {
       if (!isZoomedIn) {
         double dx = (firstCursor.getX() - scrollBasisFirstCursorX) * width;
         offset -= dx;
-        scrollBasisFirstCursorX = firstCursor.getX();
-        scrollBasisFirstCursorY = firstCursor.getY();
+      } else {
+        double dx = (firstCursor.getX() - scrollBasisFirstCursorX) * width;
+        double dy = (firstCursor.getY() - scrollBasisFirstCursorY) * height;
+        mainVisibleImage.addToLimits(-dx, -dy);
       }
+      scrollBasisFirstCursorX = firstCursor.getX();
+      scrollBasisFirstCursorY = firstCursor.getY();
     } else if (!isPanning && isZooming) {
-      double cursorsDistance = firstCursor.getDistance(secondCursor);
-      double zoomFactor = cursorsDistance / zoomCursorsDistance;
-      int imageIndex = (int) offset / (width + gap);
-      images.get(imageIndex).zoomFactor *= zoomFactor;
-      isZoomedIn = abs((float) zoomFactor - 1.0) > 0.05;
-      zoomCursorsDistance = cursorsDistance;
+      isZoomedIn = mainVisibleImage.zoomUsingCursors(firstCursor, firstCursorLastPos, secondCursor, secondCursorLastPos);
+      
+      firstCursorLastPos = firstCursor.getPosition();
+      secondCursorLastPos = secondCursor.getPosition();
     } else if (!isPanning && !isZoomedIn && !isZooming) {
       // Animate the snapback
-      if (desiredOffset != offset) {
+      if (abs((float) desiredOffset - (float) offset) > 1) {
         offset += (desiredOffset - offset) / 10;
       }
     }  
@@ -123,9 +126,9 @@ void addTuioCursor(TuioCursor tcur) {
           (!isZooming && isZoomedIn && isPanning)) {
         isPanning = false;
         isZooming = true;
-        zoomCursorsDistance = firstCursor.getDistance(secondCursor);
-        zoomCursorsCenterX = (firstCursor.getX() + secondCursor.getX()) / 2;
-        zoomCursorsCenterY = (firstCursor.getY() + secondCursor.getY()) / 2;
+        
+        firstCursorLastPos = firstCursor.getPosition();
+        secondCursorLastPos = secondCursor.getPosition();
       }
     }
   }
@@ -151,6 +154,8 @@ void removeTuioCursor(TuioCursor tcur) {
            isZooming = false;
            isPanning = true;
          }
+         scrollBasisFirstCursorX = firstCursor.getX();
+         scrollBasisFirstCursorY = firstCursor.getY();
       }
     } else if (firstCursor != null && firstCursor == tcur) {
       if (!isZooming && !isZoomedIn && !isPanning) {
@@ -158,7 +163,9 @@ void removeTuioCursor(TuioCursor tcur) {
       } else if ((!isZooming && !isZoomedIn && isPanning) ||
                  (!isZooming && !isZoomedIn && !isPanning)) {
         isPanning = false;
-        float xspeed = tcur.getXSpeed();
+        float xspeed = tcur.getXSpeed();        
+        // float xspeed = (tcur.getX() - tcur.getPath().get(tcur.getPath().size() - 5).getX()) / (tcur.getTuioTime().getTotalMilliseconds() - tcur.getPath().get(tcur.getPath().size() - 5).getTuioTime().getTotalMilliseconds());
+        // println("x: " + tcur.getX() + " x': " + tcur.getPath().get(tcur.getPath().size() - 5).getX() + " t: " + tcur.getTuioTime().getTotalMilliseconds() + " t': " + tcur.getPath().get(tcur.getPath().size() - 5).getTuioTime().getTotalMilliseconds());
         println("X Speed: " + xspeed);
         if (xspeed > 20) {
           println("Snapping right: " + offset);
@@ -170,7 +177,7 @@ void removeTuioCursor(TuioCursor tcur) {
           double origOffset = offset + width * (-tcur.getPath().get(0).getX() + tcur.getX());
           snapToLeft(origOffset);
         } else {
-          println("Snapping offset");
+          // println("Snapping offset");
           snapOffsetToClosest();
         }
       } else if (!isZooming && isZoomedIn && isPanning) {
